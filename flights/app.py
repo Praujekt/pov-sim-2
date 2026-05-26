@@ -1,11 +1,33 @@
+import logging
+import os
+
+import pyroscope
 from flasgger import Swagger
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from utils import get_random_int
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+logging.getLogger("werkzeug").setLevel(logging.INFO)
+
+# Stage 2.2 — Pyroscope continuous profiling.
+# Pushes profiles direct to Grafana Cloud Pyroscope (bypasses Alloy by design).
+pyroscope.configure(
+    application_name=os.environ.get("PYROSCOPE_APPLICATION_NAME", "flights"),
+    server_address=os.environ["PYROSCOPE_SERVER_ADDRESS"],
+    basic_auth_username=os.environ["PYROSCOPE_BASIC_AUTH_USER"],
+    basic_auth_password=os.environ["PYROSCOPE_BASIC_AUTH_PASSWORD"],
+    tags={
+        "service.namespace": "pov-sim",
+        "deployment.environment": "lab",
+    },
+)
+
 app = Flask(__name__)
 Swagger(app)
 CORS(app)
+app.logger.setLevel(logging.INFO)
+app.logger.info("flights service starting up")
 
 @app.route('/health', methods=['GET'])
 def health():
