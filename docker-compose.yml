@@ -38,8 +38,11 @@ services:
       PYROSCOPE_SERVER_ADDRESS: ${PYROSCOPE_SERVER_ADDRESS}
       PYROSCOPE_BASIC_AUTH_USER: ${PYROSCOPE_BASIC_AUTH_USER}
       PYROSCOPE_BASIC_AUTH_PASSWORD: ${CLOUD_OTLP_PASSWORD}
+      # Downstream service URL for /airlines/{code}/flights (Stage 3.2 chain)
+      FLIGHTS_SERVICE_URL: http://flights:5001
     depends_on:
       - alloy
+      - flights
     profiles: [backends]
   flights:
     build:
