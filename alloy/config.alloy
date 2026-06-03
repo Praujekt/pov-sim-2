@@ -18,6 +18,28 @@ otelcol.receiver.otlp "default" {
 	http { }
 
 	output {
+		metrics = [otelcol.processor.filter.drop_health.input]
+		logs    = [otelcol.processor.filter.drop_health.input]
+		traces  = [otelcol.processor.filter.drop_health.input]
+	}
+}
+
+// Drops spans for /health endpoint requests — Grafana best-practice (excludes
+// noisy probe traffic from traces to keep payloads focused on real user paths).
+// Language-agnostic at the collector layer rather than per-SDK env var; covers
+// both Python and Java services from one place.
+otelcol.processor.filter "drop_health" {
+	error_mode = "ignore"
+
+	traces {
+		span = [
+			"attributes[\"url.path\"] == \"/health\"",
+			"attributes[\"http.target\"] == \"/health\"",
+			"attributes[\"http.route\"] == \"/health\"",
+		]
+	}
+
+	output {
 		metrics = [otelcol.processor.resourcedetection.default.input]
 		logs    = [otelcol.processor.resourcedetection.default.input]
 		traces  = [otelcol.processor.resourcedetection.default.input]
@@ -182,7 +204,17 @@ loki.source.docker "default" {
 	host          = "unix:///var/run/docker.sock"
 	targets       = discovery.docker.containers.targets
 	relabel_rules = discovery.relabel.docker_to_loki.rules
-	forward_to    = [loki.write.grafana_cloud.receiver]
+	forward_to    = [loki.process.cleanup.receiver]
+}
+
+// Strip ANSI color escape sequences before writing to Loki — Grafana
+// best-practice (Werkzeug, npm, and other dev-mode tools emit color codes
+// that bloat storage bytes and break regex matching). Single-stage processor
+// applied to every log stream the Docker source produces.
+loki.process "cleanup" {
+	forward_to = [loki.write.grafana_cloud.receiver]
+
+	stage.decolorize { }
 }
 
 loki.write "grafana_cloud" {
