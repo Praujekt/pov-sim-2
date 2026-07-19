@@ -92,7 +92,7 @@ run_loadgen() {
         # Ping GET airlines
         # Invoke error per error rate
         QUERY_PARAMS=""
-        RAND_DEC=($echo "0.$((RANDOM % 100))")
+        RAND_DEC=$(printf "0.%02d" $((RANDOM % 100)))
         if (( $(echo "$RAND_DEC < $ERROR_RATE" | bc -l) )); then
             QUERY_PARAMS=$GET_AIRLINES_RAISE_QUERY_PARAM
         fi
@@ -104,7 +104,7 @@ run_loadgen() {
         # Stage 3.2 — exercise the cross-service call chain
         for i in "${GET_AIRLINE_FLIGHTS_ENDPOINTS[@]}"; do
             QUERY_PARAMS=""
-            RAND_DEC=($echo "0.$((RANDOM % 100))")
+            RAND_DEC=$(printf "0.%02d" $((RANDOM % 100)))
             if (( $(echo "$RAND_DEC < $ERROR_RATE" | bc -l) )); then
                 QUERY_PARAMS=$GET_AIRLINE_FLIGHTS_RAISE_QUERY_PARAM
             fi
